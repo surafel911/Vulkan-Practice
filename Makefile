@@ -1,27 +1,21 @@
 CC = clang
 
-CFLAGS = \
-		-m64 \
-		-Wall \
-		-Werror \
-		-std=c99 \
+BINARY = vulkan-dev
 
-INCDIR = \
-		-Iinclude \
-		-I/usr/include/ \
-		-I/usr/include/vulkan \
+CFLAGS = -m64 -Wall -Werror -std=c99
 
-LIBDIR = -L/usr/lib/
+INCDIR =  -I include -I /usr/include/
 
-LIBRARIES = \
-		-lvulkan
+LIBDIR = -L /usr/lib/
 
-SOURCES = src/*.c
+LIBRARIES = -l dl -l glfw
 
-all: test
+SOURCES = src/*.c test/main.c
 
-test:
-	$(CC) -g $(CFLAGS) -o bin/$@ $(INCDIR) $(LIBDIR) $(LIBRARIES) $(SOURCES)
+all: debug
 
-perf:
-	$(CC) -O3 $(CFLAGS) -o bin/$@ $(INCDIR) $(LIBDIR) $(LIBRARIES) $(SOURCES)
+debug:
+	$(CC) -g $(CFLAGS) -o bin/$(BINARY) $(INCDIR) $(LIBDIR) $(LIBRARIES) $(SOURCES)
+
+release:
+	$(CC) -O3 $(CFLAGS) -o bin/$(BINARY) $(INCDIR) $(LIBDIR) $(LIBRARIES) $(SOURCES)
