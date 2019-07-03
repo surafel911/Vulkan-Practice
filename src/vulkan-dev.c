@@ -96,7 +96,7 @@ _vk_dev_get_instance_extensions(char*** extensions,
 }
 
 static VkPhysicalDevice
-_vk_dev_find_physical_device_of_type(const VkPhysicalDevice* physical_devices,
+_vk_dev_find_suitable_physical_device(const VkPhysicalDevice* physical_devices,
 	const uint32_t device_count, const VkPhysicalDeviceType device_type)
 {
 	VkPhysicalDeviceProperties device_properties;
@@ -135,10 +135,10 @@ _vk_dev_get_physical_device(void)
 
 	physical_device = VK_NULL_HANDLE;
 
-	physical_device = _vk_dev_find_physical_device_of_type(physical_devices,
+	physical_device = _vk_dev_find_suitable_physical_device(physical_devices,
 		device_count, VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU);
 	if (physical_device == VK_NULL_HANDLE) {
-		physical_device = _vk_dev_find_physical_device_of_type(physical_devices,
+		physical_device = _vk_dev_find_suitable_physical_device(physical_devices,
 			device_count, VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU);
 		if (physical_device == VK_NULL_HANDLE) {
 			vk_dev_fatal_error("[VULKAN] No suitable physical device found.");
@@ -148,6 +148,45 @@ _vk_dev_get_physical_device(void)
 	free(physical_devices);
 
 	return physical_device;
+}
+
+static int
+_vk_dev_find_suitable_queue_family(const VkQueueFamilyProperties* queue_family_properties,
+	const uint32_t queue_family_count)
+{
+	for (int i = 0; i < queue_family_count; i++) {
+		if (queue_family_properties[i].queueCount > 1 && queue_family_properties[i].queueFlags & VK_QUEUE_GRAPHICS_BIT) {
+			return i;
+		}
+	}
+
+	return -1;
+}
+
+static uint32_t
+_vk_dev_get_physical_device_queue_family_index(const VkPhysicalDevice physical_device)
+{
+	VkQueueFamilyProperties* queue_family_properties;
+
+	int queue_family_index;
+	uint32_t queue_family_count;
+
+	vkGetPhysicalDeviceQueueFamilyProperties(physical_device, &queue_family_count, NULL);
+
+	queue_family_properties = malloc(sizeof(*queue_family_properties) * queue_family_count);
+	vkGetPhysicalDeviceQueueFamilyProperties(physical_device, &queue_family_count,
+		queue_family_properties);
+
+	vkGetPhysicalDeviceQueueFamilyProperties(physical_device, &queue_family_count, queue_family_properties);
+
+	queue_family_index = _vk_dev_find_suitable_queue_family(queue_family_properties, queue_family_count);
+	if (queue_family_index == -1) {
+		// TODO: Fucking die man
+	}
+
+	free(queue_family_properties);
+
+	return queue_family_index;
 }
 
 static void
@@ -199,6 +238,8 @@ _vk_dev_instance_create(void)
 	}
 
 	physical_device = _vk_dev_get_physical_device();
+
+	int i = _vk_dev_get_physical_device_queue_family_index(physical_device);
 }
 
 static void
